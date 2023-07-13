@@ -36,6 +36,10 @@ type Config struct {
 	ServerNodeName string
 	ClientNodeName string
 	ParallelCount  int
+
+	TestDuration     int
+	WarmupDuration   int
+	CooldownDuration int
 }
 
 type Result struct {
@@ -100,7 +104,7 @@ func (iperf *K8sIperf3) Run(ctx context.Context, cfg *Config) (*Result, error) {
 	log.Printf("Creating %d iperf3 client pods\n", cfg.ParallelCount)
 
 	for i := 0; i < cfg.ParallelCount; i++ {
-		if err := iperf.createClient(ctx, cfg.ClientNodeName, i, serverIPs[i]); err != nil {
+		if err := iperf.createClient(ctx, cfg, i, serverIPs[i]); err != nil {
 			return nil, fmt.Errorf("while creating client: %w", err)
 		}
 
@@ -170,21 +174,23 @@ func (iperf *K8sIperf3) createServer(ctx context.Context, nodeName string, count
 	return nil
 }
 
-func (iperf *K8sIperf3) createClient(ctx context.Context, nodeName string, count int, ip string) error {
+func (iperf *K8sIperf3) createClient(ctx context.Context, cfg *Config, count int, ip string) error {
 	name := fmt.Sprintf("iperf3-client-%d", count)
+
+	iperfTime := cfg.TestDuration + cfg.WarmupDuration + cfg.CooldownDuration
 
 	if _, err := iperf.clientset.CoreV1().Pods("default").Create(ctx, &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 		Spec: v1.PodSpec{
-			NodeName: nodeName,
+			NodeName: cfg.ClientNodeName,
 			Containers: []v1.Container{{
 				Name:  "iperf3",
 				Image: "networkstatic/iperf3",
 				Args: []string{
 					"-f", "g",
-					"-t", "70",
+					"-t", fmt.Sprintf("%d", iperfTime),
 					"-c", ip,
 				},
 			}},

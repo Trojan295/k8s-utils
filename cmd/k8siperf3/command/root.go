@@ -14,6 +14,10 @@ var (
 	clientNodeName string
 	parallelCount  int
 	kubeconfig     string
+
+	testDuration     int
+	warmupDuration   int
+	cooldownDuration int
 )
 
 func NewRoot() *cobra.Command {
@@ -29,9 +33,12 @@ func NewRoot() *cobra.Command {
 			iperf3 := k8siperf3.NewK8sIperf3(clientset)
 
 			result, err := iperf3.Run(cmd.Context(), &k8siperf3.Config{
-				ServerNodeName: serverNodeName,
-				ClientNodeName: clientNodeName,
-				ParallelCount:  parallelCount,
+				ServerNodeName:   serverNodeName,
+				ClientNodeName:   clientNodeName,
+				ParallelCount:    parallelCount,
+				TestDuration:     testDuration,
+				WarmupDuration:   warmupDuration,
+				CooldownDuration: cooldownDuration,
 			})
 			if err != nil {
 				return fmt.Errorf("while running iperf3: %w", err)
@@ -59,6 +66,9 @@ func NewRoot() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&serverNodeName, "server-node-name", "", "Node name for the iperf3 server pods")
 	cmd.PersistentFlags().StringVar(&clientNodeName, "client-node-name", "", "Node name for the iperf3 client pods")
 	cmd.PersistentFlags().IntVar(&parallelCount, "parallel-count", 1, "Number of parallel iperf3 tests")
+	cmd.PersistentFlags().IntVar(&testDuration, "test-duration", 30, "Duration of the iperf3 test in seconds")
+	cmd.PersistentFlags().IntVar(&warmupDuration, "warmup-duration", 15, "Duration of the iperf3 warmup in seconds")
+	cmd.PersistentFlags().IntVar(&cooldownDuration, "cooldown-duration", 15, "Duration of the iperf3 cooldown in seconds")
 
 	return cmd
 }

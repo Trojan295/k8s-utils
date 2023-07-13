@@ -14,7 +14,7 @@ func parseIperf3Logs(logs string, omitStart, omitEnd int) (*Result, error) {
 	matches := iperf3SenderLogRegexp.FindAllStringSubmatch(logs, -1)
 	count := len(matches) - omitStart - omitEnd
 
-	var bitrate float64
+	var bitrate float64 = 0
 
 	for _, match := range matches[omitStart : len(matches)-omitEnd] {
 		value, err := strconv.ParseFloat(match[1], 64)
